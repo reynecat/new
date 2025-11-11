@@ -1,5 +1,5 @@
 # Stage 1: Build Spring Boot WAR
-FROM maven:3.9-eclipse-temurin-25 AS builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
@@ -7,10 +7,10 @@ WORKDIR /app
 RUN git clone https://github.com/SteveKimbespin/petclinic_btc.git .
 
 # MySQL 프로필로 WAR 빌드
-RUN mvn clean package -P MySQL -DskipTests -DskipTests -Dmockito.mock-maker=inline
+RUN mvn clean package -Dmaven.test.skip=true -Dwro4j.skip=true
 
 # Stage 2: Runtime
-FROM tomcat:11-jdk17-temurin
+FROM tomcat:11-jdk21-temurin
 
 
 # Tomcat 불필요한 default 앱 제거
