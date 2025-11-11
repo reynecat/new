@@ -10,7 +10,8 @@ RUN git clone https://github.com/SteveKimbespin/petclinic_btc.git .
 RUN mvn clean package -P MySQL -DskipTests
 
 # Stage 2: Runtime
-FROM tomcat:11-eclipse-temurin-25-slim
+FROM tomcat:11-jdk17-temurin
+
 
 # Tomcat 불필요한 default 앱 제거
 RUN rm -rf /usr/local/tomcat/webapps/ROOT /usr/local/tomcat/webapps/docs \
