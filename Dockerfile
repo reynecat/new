@@ -7,7 +7,7 @@ WORKDIR /app
 RUN git clone https://github.com/SteveKimbespin/petclinic_btc.git .
 
 # MySQL 프로필로 WAR 빌드
-RUN mvn clean package -P MySQL -DskipTests
+RUN mvn clean package -P MySQL -DskipTests -DskipTests -Dmockito.mock-maker=inline
 
 # Stage 2: Runtime
 FROM tomcat:11-jdk17-temurin
