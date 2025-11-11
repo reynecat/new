@@ -4,10 +4,10 @@ FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
 # 펫클리닉 소스코드 클론 또는 COPY (여기서는 클론 방식)
-RUN git clone https://github.com/SteveKimbespin/petclinic_btc.git .
+RUN git clone https://github.com/reynecat/github.git 
 
 # MySQL 프로필로 WAR 빌드
-RUN mvn clean package -Dmaven.test.skip=true -Dwro4j.skip=true
+RUN mvn clean package -DskipTests
 
 # Stage 2: Runtime
 FROM tomcat:11-jdk21-temurin
