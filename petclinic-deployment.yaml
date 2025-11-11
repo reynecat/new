@@ -1,0 +1,160 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: petclinic
+
+---
+# ConfigMap: 데이터베이스 연결 정보
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: petclinic-config
+  namespace: petclinic
+data:
+  DB_HOST: db-amazonvet.ciyiccb2k2z8.ap-northeast-2.rds.amazonaws.com
+  DB_PORT: "3306"
+  DB_NAME: petclinic
+  DB_USER: admin
+
+---
+# Secret: DB 비밀번호 (별도로 생성 필요)
+# kubectl create secret generic petclinic-db-secret \
+#   --from-literal=DB_PASSWORD='your_password' \
+#   -n petclinic
+
+---
+# Deployment: 펫클리닉 애플리케이션
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: petclinic
+  namespace: petclinic
+  labels:
+    app: petclinic
+spec:
+  replicas: 2  # 고가용성을 위해 2개 복제본
+  selector:
+    matchLabels:
+      app: petclinic
+  template:
+    metadata:
+      labels:
+        app: petclinic
+    spec:
+      # 다른 AZ에 배포되도록 affinity 설정
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - petclinic
+              topologyKey: kubernetes.io/hostname
+
+      containers:
+      - name: petclinic
+        image: <AWS_ACCOUNT_ID>.dkr.ecr.ap-northeast-2.amazonaws.com/petclinic:latest
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+          name: http
+        
+        # 환경변수 설정
+        env:
+        - name: CATALINA_OPTS
+          value: "-Xmx512m -Xms256m"
+        
+        # ConfigMap에서 데이터베이스 정보 가져오기
+        envFrom:
+        - configMapRef:
+            name: petclinic-config
+        - secretRef:
+            name: petclinic-db-secret
+        
+        # 헬스체크 설정
+        livenessProbe:
+          httpGet:
+            path: /petclinic
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /petclinic
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # 리소스 할당
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # 보안 설정
+        securityContext:
+          runAsNonRoot: false  # Tomcat은 root로 실행 필요
+          allowPrivilegeEscalation: false
+
+---
+# Service: LoadBalancer - 외부 트래픽 수신
+apiVersion: v1
+kind: Service
+metadata:
+  name: petclinic-lb
+  namespace: petclinic
+  labels:
+    app: petclinic
+  annotations:
+    # AWS ALB 사용
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    # 외부 IP 할당 (NLB)
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+spec:
+  type: LoadBalancer
+  selector:
+    app: petclinic
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  
+  # 세션 유지
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+
+---
+# Service: ClusterIP - 내부 통신용 (선택사항)
+apiVersion: v1
+kind: Service
+metadata:
+  name: petclinic-svc
+  namespace: petclinic
+  labels:
+    app: petclinic
+spec:
+  type: ClusterIP
+  selector:
+    app: petclinic
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
