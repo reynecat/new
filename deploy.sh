@@ -41,23 +41,9 @@ echo -e "\nLoadBalancer 서비스:"
 kubectl get svc -n petclinic
 
 
-echo -e "\n${YELLOW}LoadBalancer 외부 IP 획득 중 (최대 3분 대기)...${NC}"
-for i in {1..36}; do
-    EXTERNAL_IP=$(kubectl get svc petclinic-lb -n petclinic -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
-    if [ -n "$EXTERNAL_IP" ]; then
-        echo -e "${GREEN}외부 IP 획득 완료: $EXTERNAL_IP${NC}"
-        echo -e "${GREEN}펫클리닉 접속: http://$EXTERNAL_IP/petclinic${NC}"
-        break
-    fi
-    echo "대기 중... ($((i*5))초)"
-    sleep 5
-done
 
-if [ -z "$EXTERNAL_IP" ]; then
-    echo -e "${YELLOW}외부 IP 획득 실패 (시간 초과)${NC}"
-    echo "다음 명령어로 나중에 확인할 수 있습니다:"
-    echo "kubectl get svc petclinic-lb -n petclinic"
-fi
+
+
 
 echo -e "\n${GREEN}========================================${NC}"
 echo -e "${GREEN}배포 완료!${NC}"
