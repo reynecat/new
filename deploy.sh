@@ -40,11 +40,6 @@ kubectl get pods -n petclinic
 echo -e "\nLoadBalancer 서비스:"
 kubectl get svc -n petclinic
 
-
-
-
-
-
 echo -e "\n${GREEN}========================================${NC}"
 echo -e "${GREEN}배포 완료!${NC}"
 echo -e "${GREEN}========================================${NC}"
